@@ -1,1 +1,257 @@
-index.html
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>nSign URI Builder</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.5;
+    }
+    h1, h2 {
+      margin-bottom: 12px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .full {
+      grid-column: 1 / -1;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    input, select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    small {
+      color: #666;
+      display: block;
+      margin-top: 4px;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    button {
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .secondary {
+      background: #eee;
+    }
+    .primary {
+      background: #111;
+      color: white;
+    }
+    .output {
+      margin-top: 20px;
+    }
+    .error {
+      color: #b00020;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+    .hint {
+      color: #555;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>nSign URI Builder</h1>
+
+  <div class="card">
+    <div class="grid">
+      <div class="full">
+        <label for="doc">Vstupní dokument *</label>
+        <input id="doc" type="url" placeholder="https://example.com/file.pdf" required />
+        <small>Povinné pole. Parametr <code>doc</code>.</small>
+      </div>
+
+      <div class="full">
+        <label for="callback">Zpětná adresa</label>
+        <input id="callback" type="url" placeholder="https://example.com/return" />
+      </div>
+
+      <div>
+        <label for="recipientName">Jméno příjemce e-mailu</label>
+        <input id="recipientName" type="text" placeholder="Např. Petr Krobot" />
+      </div>
+
+      <div>
+        <label for="recipientEmail">E-mail příjemce</label>
+        <input id="recipientEmail" type="email" placeholder="napr. petr@firma.cz" />
+      </div>
+
+      <div>
+        <label for="locale">Locale</label>
+        <input id="locale" type="text" placeholder="cs-CZ" value="cs-CZ" />
+      </div>
+
+      <div>
+        <label for="mode">Mode</label>
+        <select id="mode">
+          <option value="sign" selected>sign</option>
+          <option value="prepare">prepare</option>
+          <option value="view">view</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Signatář 1 (nepovinný)</h2>
+    <div class="grid">
+      <div>
+        <label for="sgn1_name">Jméno</label>
+        <input id="sgn1_name" type="text" placeholder="Např. Jan Novak" />
+      </div>
+
+      <div>
+        <label for="sgn1_email">E-mail</label>
+        <input id="sgn1_email" type="email" placeholder="napr. jan@firma.cz" />
+      </div>
+
+      <div>
+        <label for="sgn1_rol">Role</label>
+        <select id="sgn1_rol">
+          <option value="">-- nevyplněno --</option>
+          <option value="signer">signer</option>
+          <option value="approver">approver</option>
+          <option value="viewer">viewer</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="sgn1_box1">Podpisové pole 1</label>
+        <input id="sgn1_box1" type="text" placeholder="120-540-180-50p1" />
+        <small>Formát: X-Y-W-HpZ</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="secondary" id="clearBtn">Vyčistit</button>
+    <button type="button" class="primary" id="generateBtn">Vygenerovat a otevřít</button>
+  </div>
+
+  <div class="output">
+    <div id="error" class="error"></div>
+    <div class="hint">Náhled vygenerovaného odkazu:</div>
+    <textarea id="result" rows="6" readonly></textarea>
+  </div>
+
+  <script>
+    const preferredBase = "https://nsign.nowatron.cz/sign";
+
+    function buildUrl() {
+      const doc = document.getElementById("doc").value.trim();
+      const callback = document.getElementById("callback").value.trim();
+      const recipientName = document.getElementById("recipientName").value.trim();
+      const recipientEmail = document.getElementById("recipientEmail").value.trim();
+      const locale = document.getElementById("locale").value.trim();
+      const mode = document.getElementById("mode").value.trim();
+
+      const sgn1_name = document.getElementById("sgn1_name").value.trim();
+      const sgn1_email = document.getElementById("sgn1_email").value.trim();
+      const sgn1_rol = document.getElementById("sgn1_rol").value.trim();
+      const sgn1_box1 = document.getElementById("sgn1_box1").value.trim();
+
+      const errorEl = document.getElementById("error");
+      errorEl.textContent = "";
+
+      if (!doc) {
+        errorEl.textContent = "Pole „Vstupní dokument“ je povinné.";
+        return null;
+      }
+
+      const params = new URLSearchParams();
+      params.append("v", "1");
+      params.append("doc", doc);
+
+      if (callback) params.append("callback", callback);
+      if (locale) params.append("locale", locale);
+      if (mode) params.append("mode", mode);
+
+      if (sgn1_name) params.append("sgn1_name", sgn1_name);
+      if (sgn1_rol) params.append("sgn1_rol", sgn1_rol);
+      if (sgn1_box1) params.append("sgn1_box1", sgn1_box1);
+
+      // E-mail signatáře ve specifikaci zatím není, ale nechávám ho připravený
+      // pro budoucí rozšíření. Klient má neznámé klíče ignorovat.
+      if (sgn1_email) params.append("sgn1_email", sgn1_email);
+
+      // Příjemce e-mailu: ve specifikaci je rec1 jen e-mail.
+      if (recipientEmail) params.append("rec1", recipientEmail);
+
+      // Jméno příjemce ve specifikaci zatím není, nechá se pro budoucí rozšíření.
+      if (recipientName) params.append("rec1_name", recipientName);
+
+      return `${preferredBase}?${params.toString()}`;
+    }
+
+    function clearForm() {
+      document.querySelectorAll("input, textarea").forEach(el => {
+        if (el.id === "locale") {
+          el.value = "cs-CZ";
+        } else if (el.id === "result") {
+          el.value = "";
+        } else {
+          el.value = "";
+        }
+      });
+
+      document.querySelectorAll("select").forEach(el => {
+        if (el.id === "mode") {
+          el.value = "sign";
+        } else {
+          el.value = "";
+        }
+      });
+
+      document.getElementById("error").textContent = "";
+    }
+
+    document.getElementById("clearBtn").addEventListener("click", clearForm);
+
+    document.getElementById("generateBtn").addEventListener("click", () => {
+      const url = buildUrl();
+      if (!url) return;
+
+      document.getElementById("result").value = url;
+
+      // user gesture -> lepší šance, že iOS otevře appku
+      window.location.href = url;
+    });
+  </script>
+</body>
+</html>
