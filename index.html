@@ -95,11 +95,13 @@
         <label for="doc">Vstupní dokument *</label>
         <input id="doc" type="url" placeholder="https://example.com/file.pdf" required />
         <small>Povinné pole. Parametr <code>doc</code>.</small>
+        <button type="button" id="sampleDocBtn" class="secondary" style="margin-top:8px">Vložit SAMPLE 10.pdf</button>
       </div>
 
       <div class="full">
         <label for="callback">Zpětná adresa</label>
         <input id="callback" type="url" placeholder="https://example.com/return" />
+        <button type="button" id="sampleCallbackBtn" class="secondary" style="margin-top:8px">Propsat zpět do TESTY/nSign/SIGNED</button>
       </div>
 
       <div>
@@ -110,6 +112,7 @@
       <div>
         <label for="recipientEmail">E-mail příjemce</label>
         <input id="recipientEmail" type="email" placeholder="napr. petr@firma.cz" />
+        <button type="button" id="sampleRecipientBtn" class="secondary" style="margin-top:8px">Vložit email krobotak@gmail.com</button>
       </div>
 
       <div>
@@ -251,6 +254,19 @@
 
       // user gesture -> lepší šance, že iOS otevře appku
       window.location.href = url;
+    });
+
+    document.getElementById("sampleDocBtn").addEventListener("click", () => {
+      document.getElementById("doc").value = "https://nowatroncz.sharepoint.com/:b:/s/RnD/IQChTQryO1cpTahPoaYk8P7bAQX_b7w44Yzmjmr0wTyD1ZE";
+    });
+
+    document.getElementById("sampleCallbackBtn").addEventListener("click", () => {
+      document.getElementById("callback").value = "https://nowatroncz.sharepoint.com/:f:/s/RnD/IgAMB7cOx6mLTqAUgkT1PN0YAX80n-tA40nUeflaqNmLb4A";
+    });
+
+    document.getElementById("sampleRecipientBtn").addEventListener("click", () => {
+      document.getElementById("recipientEmail").value = "krobotak@gmail.com";
+      document.getElementById("recipientName").value = "Petr Krobot";
     });
   </script>
 </body>
