@@ -32,6 +32,30 @@
       margin-top: 0;
       margin-bottom: 12px;
     }
+    .nested-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .nested-card-header h3,
+    .nested-card-header h4 {
+      margin: 0;
+    }
+    .remove-btn {
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 999px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -114,13 +138,12 @@
         <input id="callback" type="url" placeholder="https://example.com/return" />
         <button type="button" id="sampleCallbackBtn" class="secondary" style="margin-top:8px">Propsat zpět do TESTY/nSign/SIGNED</button>
       </div>
+    </div>
+  </div>
 
-      <div class="full">
-        <h2>Příjemci</h2>
-        <div id="recipientsContainer"></div>
-        <button type="button" id="addRecipientBtn" class="secondary" style="margin-top:12px">Přidat příjemce</button>
-      </div>
-
+  <div class="card">
+    <h2>Nastavení</h2>
+    <div class="grid">
       <div>
         <label for="locale">Locale</label>
         <input id="locale" type="text" placeholder="cs-CZ" value="cs-CZ" />
@@ -135,6 +158,12 @@
         </select>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>Příjemci</h2>
+    <div id="recipientsContainer"></div>
+    <button type="button" id="addRecipientBtn" class="secondary" style="margin-top:12px">Přidat příjemce</button>
   </div>
 
   <div class="card">
@@ -241,7 +270,10 @@
       const wrapper = document.createElement("div");
       wrapper.className = "nested-card recipient-set";
       wrapper.innerHTML = `
-        <h3>Příjemce ${recipientNumber}</h3>
+        <div class="nested-card-header">
+          <h3>Příjemce ${recipientNumber}</h3>
+          <button type="button" class="remove-btn remove-recipient-btn" aria-label="Odebrat příjemce">×</button>
+        </div>
         <div class="grid">
           <div>
             <label>Jméno příjemce e-mailu</label>
@@ -258,6 +290,10 @@
       wrapper.querySelector(".sample-recipient-btn").addEventListener("click", () => {
         wrapper.querySelector('[data-field="recipient-email"]').value = "krobotak@gmail.com";
         wrapper.querySelector('[data-field="recipient-name"]').value = "Petr Krobot";
+      });
+
+      wrapper.querySelector(".remove-recipient-btn").addEventListener("click", () => {
+        wrapper.remove();
       });
 
       container.appendChild(wrapper);
