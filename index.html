@@ -21,6 +21,17 @@
       padding: 20px;
       margin-bottom: 20px;
     }
+    .nested-card {
+      border: 1px solid #e6e6e6;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .nested-card h3,
+    .nested-card h4 {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -104,15 +115,10 @@
         <button type="button" id="sampleCallbackBtn" class="secondary" style="margin-top:8px">Propsat zpět do TESTY/nSign/SIGNED</button>
       </div>
 
-      <div>
-        <label for="recipientName">Jméno příjemce e-mailu</label>
-        <input id="recipientName" type="text" placeholder="Např. Petr Krobot" />
-      </div>
-
-      <div>
-        <label for="recipientEmail">E-mail příjemce</label>
-        <input id="recipientEmail" type="email" placeholder="napr. petr@firma.cz" />
-        <button type="button" id="sampleRecipientBtn" class="secondary" style="margin-top:8px">Vložit email krobotak@gmail.com</button>
+      <div class="full">
+        <h2>Příjemci</h2>
+        <div id="recipientsContainer"></div>
+        <button type="button" id="addRecipientBtn" class="secondary" style="margin-top:12px">Přidat příjemce</button>
       </div>
 
       <div>
@@ -132,34 +138,9 @@
   </div>
 
   <div class="card">
-    <h2>Signatář 1 (nepovinný)</h2>
-    <div class="grid">
-      <div>
-        <label for="sgn1_name">Jméno</label>
-        <input id="sgn1_name" type="text" placeholder="Např. Jan Novak" />
-      </div>
-
-      <div>
-        <label for="sgn1_email">E-mail</label>
-        <input id="sgn1_email" type="email" placeholder="napr. jan@firma.cz" />
-      </div>
-
-      <div>
-        <label for="sgn1_rol">Role</label>
-        <select id="sgn1_rol">
-          <option value="">-- nevyplněno --</option>
-          <option value="signer">signer</option>
-          <option value="approver">approver</option>
-          <option value="viewer">viewer</option>
-        </select>
-      </div>
-
-      <div>
-        <label for="sgn1_box1">Podpisové pole 1</label>
-        <input id="sgn1_box1" type="text" placeholder="120-540-180-50p1" />
-        <small>Formát: X-Y-W-HpZ</small>
-      </div>
-    </div>
+    <h2>Signatáři</h2>
+    <div id="signersContainer"></div>
+    <button type="button" id="addSignerBtn" class="secondary" style="margin-top:12px">Přidat signatáře</button>
   </div>
 
   <div class="actions">
@@ -179,15 +160,8 @@
     function buildUrl() {
       const doc = document.getElementById("doc").value.trim();
       const callback = document.getElementById("callback").value.trim();
-      const recipientName = document.getElementById("recipientName").value.trim();
-      const recipientEmail = document.getElementById("recipientEmail").value.trim();
       const locale = document.getElementById("locale").value.trim();
       const mode = document.getElementById("mode").value.trim();
-
-      const sgn1_name = document.getElementById("sgn1_name").value.trim();
-      const sgn1_email = document.getElementById("sgn1_email").value.trim();
-      const sgn1_rol = document.getElementById("sgn1_rol").value.trim();
-      const sgn1_box1 = document.getElementById("sgn1_box1").value.trim();
 
       const errorEl = document.getElementById("error");
       errorEl.textContent = "";
@@ -205,19 +179,33 @@
       if (locale) params.append("locale", locale);
       if (mode) params.append("mode", mode);
 
-      if (sgn1_name) params.append("sgn1_name", sgn1_name);
-      if (sgn1_rol) params.append("sgn1_rol", sgn1_rol);
-      if (sgn1_box1) params.append("sgn1_box1", sgn1_box1);
+      const recipientSets = document.querySelectorAll(".recipient-set");
+      recipientSets.forEach((set, index) => {
+        const recipientNumber = index + 1;
+        const name = set.querySelector('[data-field="recipient-name"]').value.trim();
+        const email = set.querySelector('[data-field="recipient-email"]').value.trim();
 
-      // E-mail signatáře ve specifikaci zatím není, ale nechávám ho připravený
-      // pro budoucí rozšíření. Klient má neznámé klíče ignorovat.
-      if (sgn1_email) params.append("sgn1_email", sgn1_email);
+        if (email) params.append(`rec${recipientNumber}`, email);
+        if (name) params.append(`rec${recipientNumber}_name`, name);
+      });
 
-      // Příjemce e-mailu: ve specifikaci je rec1 jen e-mail.
-      if (recipientEmail) params.append("rec1", recipientEmail);
+      const signerSets = document.querySelectorAll(".signer-set");
+      signerSets.forEach((set, index) => {
+        const signerNumber = index + 1;
+        const name = set.querySelector('[data-field="signer-name"]').value.trim();
+        const email = set.querySelector('[data-field="signer-email"]').value.trim();
+        const role = set.querySelector('[data-field="signer-role"]').value.trim();
 
-      // Jméno příjemce ve specifikaci zatím není, nechá se pro budoucí rozšíření.
-      if (recipientName) params.append("rec1_name", recipientName);
+        if (name) params.append(`sgn${signerNumber}_name`, name);
+        if (email) params.append(`sgn${signerNumber}_email`, email);
+        if (role) params.append(`sgn${signerNumber}_rol`, role);
+
+        const boxes = set.querySelectorAll('.signer-box-input');
+        boxes.forEach((boxInput, boxIndex) => {
+          const value = boxInput.value.trim();
+          if (value) params.append(`sgn${signerNumber}_box${boxIndex + 1}`, value);
+        });
+      });
 
       return `${preferredBase}?${params.toString()}`;
     }
@@ -241,10 +229,98 @@
         }
       });
 
+      document.getElementById("recipientsContainer").innerHTML = "";
+      document.getElementById("signersContainer").innerHTML = "";
       document.getElementById("error").textContent = "";
     }
 
+    function createRecipientSet() {
+      const container = document.getElementById("recipientsContainer");
+      const recipientNumber = container.querySelectorAll(".recipient-set").length + 1;
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "nested-card recipient-set";
+      wrapper.innerHTML = `
+        <h3>Příjemce ${recipientNumber}</h3>
+        <div class="grid">
+          <div>
+            <label>Jméno příjemce e-mailu</label>
+            <input type="text" data-field="recipient-name" placeholder="Např. Petr Krobot" />
+          </div>
+          <div>
+            <label>E-mail příjemce</label>
+            <input type="email" data-field="recipient-email" placeholder="napr. petr@firma.cz" />
+            <button type="button" class="secondary sample-recipient-btn" style="margin-top:8px">Vložit email krobotak@gmail.com</button>
+          </div>
+        </div>
+      `;
+
+      wrapper.querySelector(".sample-recipient-btn").addEventListener("click", () => {
+        wrapper.querySelector('[data-field="recipient-email"]').value = "krobotak@gmail.com";
+        wrapper.querySelector('[data-field="recipient-name"]').value = "Petr Krobot";
+      });
+
+      container.appendChild(wrapper);
+    }
+
+    function addSignerBox(signerWrapper) {
+      const boxesContainer = signerWrapper.querySelector(".signer-boxes-container");
+      const boxNumber = boxesContainer.querySelectorAll(".signer-box-row").length + 1;
+
+      const boxRow = document.createElement("div");
+      boxRow.className = "signer-box-row";
+      boxRow.style.marginTop = "12px";
+      boxRow.innerHTML = `
+        <label>Pozice pole číslo ${boxNumber}</label>
+        <input type="text" class="signer-box-input" placeholder="120-540-180-50p1" />
+        <small>Formát: X-Y-W-HpZ</small>
+      `;
+
+      boxesContainer.appendChild(boxRow);
+    }
+
+    function createSignerSet() {
+      const container = document.getElementById("signersContainer");
+      const signerNumber = container.querySelectorAll(".signer-set").length + 1;
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "nested-card signer-set";
+      wrapper.innerHTML = `
+        <h3>Signatář ${signerNumber}</h3>
+        <div class="grid">
+          <div>
+            <label>E-mail</label>
+            <input type="email" data-field="signer-email" placeholder="napr. jan@firma.cz" />
+          </div>
+          <div>
+            <label>Jméno</label>
+            <input type="text" data-field="signer-name" placeholder="Např. Jan Novak" />
+          </div>
+          <div>
+            <label>Role</label>
+            <select data-field="signer-role">
+              <option value="">-- nevyplněno --</option>
+              <option value="signer">signer</option>
+              <option value="approver">approver</option>
+              <option value="viewer">viewer</option>
+            </select>
+          </div>
+        </div>
+        <div class="signer-boxes-container"></div>
+        <button type="button" class="secondary add-signer-box-btn" style="margin-top:12px">Přidat podpisové pole</button>
+      `;
+
+      wrapper.querySelector(".add-signer-box-btn").addEventListener("click", () => {
+        addSignerBox(wrapper);
+      });
+
+      addSignerBox(wrapper);
+      container.appendChild(wrapper);
+    }
+
     document.getElementById("clearBtn").addEventListener("click", clearForm);
+    document.getElementById("addRecipientBtn").addEventListener("click", createRecipientSet);
+    document.getElementById("addSignerBtn").addEventListener("click", createSignerSet);
 
     document.getElementById("generateBtn").addEventListener("click", () => {
       const url = buildUrl();
@@ -262,11 +338,6 @@
 
     document.getElementById("sampleCallbackBtn").addEventListener("click", () => {
       document.getElementById("callback").value = "https://nowatroncz.sharepoint.com/:f:/s/RnD/IgAMB7cOx6mLTqAUgkT1PN0YAX80n-tA40nUeflaqNmLb4A?e=oLv5gL";
-    });
-
-    document.getElementById("sampleRecipientBtn").addEventListener("click", () => {
-      document.getElementById("recipientEmail").value = "krobotak@gmail.com";
-      document.getElementById("recipientName").value = "Petr Krobot";
     });
   </script>
 </body>
